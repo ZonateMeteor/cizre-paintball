@@ -71,6 +71,13 @@ function BaseMarker({ pos, color }: { pos: [number, number]; color: string }) {
 }
 
 function makeGrid(color: string): THREE.Texture {
+  if (typeof document === 'undefined') {
+    const data = new Uint8Array([0, 0, 0, 255])
+    const tex = new THREE.DataTexture(data, 1, 1, THREE.RGBAFormat)
+    tex.needsUpdate = true
+    return tex
+  }
+
   const size = 256
   const c = document.createElement('canvas')
   c.width = c.height = size
