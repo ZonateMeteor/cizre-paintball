@@ -7,12 +7,31 @@ import { SetupNotice } from '@/components/setup-notice'
 import { AuthScreen } from '@/components/auth-screen'
 import { MainMenu } from '@/components/main-menu'
 import { LobbyScreen } from '@/components/lobby-screen'
+import { GameCanvas } from '@/components/game/game-canvas'
+import { GameHud } from '@/components/game/game-hud'
+import { GameEngine } from '@/lib/game/engine'
 import type { Lobby } from '@/lib/types'
 import { Loader2 } from 'lucide-react'
+
+function MatchScreen({ engine, onClose }: { engine: GameEngine; onClose: () => void }) {
+  return (
+    <div className="relative h-dvh w-full overflow-hidden bg-black">
+      <GameCanvas engine={engine} />
+      <GameHud />
+      <button
+        onClick={onClose}
+        className="absolute left-4 top-4 z-30 rounded-xl border border-border bg-background/70 px-3 py-2 font-mono text-xs font-bold uppercase tracking-wider text-foreground"
+      >
+        MENÜ
+      </button>
+    </div>
+  )
+}
 
 function Game() {
   const { loading, userId, profile } = useAuth()
   const [lobby, setLobby] = useState<Lobby | null>(null)
+  const [matchEngine, setMatchEngine] = useState<GameEngine | null>(null)
 
   if (loading) {
     return (
@@ -24,7 +43,11 @@ function Game() {
 
   if (!userId || !profile) return <AuthScreen />
 
-  if (lobby) return <LobbyScreen lobby={lobby} onLeave={() => setLobby(null)} />
+  if (matchEngine) {
+    return <MatchScreen engine={matchEngine} onClose={() => setMatchEngine(null)} />
+  }
+
+  if (lobby) return <LobbyScreen lobby={lobby} onLeave={() => setLobby(null)} onStart={setMatchEngine} />
 
   return <MainMenu onEnterLobby={setLobby} />
 }

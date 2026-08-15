@@ -10,6 +10,7 @@ import {
   setTeam as setMemberTeam,
 } from '@/lib/lobby-api'
 import { sendGameInvite } from '@/lib/invite-api'
+import { GameEngine } from '@/lib/game/engine'
 import type { Lobby, LobbyMember, LobbyMessage, Profile } from '@/lib/types'
 import { GAME_MAPS } from '@/lib/types'
 import { FriendsPanel } from './friends-panel'
@@ -27,9 +28,11 @@ import {
 export function LobbyScreen({
   lobby: initialLobby,
   onLeave,
+  onStart,
 }: {
   lobby: Lobby
   onLeave: () => void
+  onStart?: (engine: GameEngine) => void
 }) {
   const { userId, profile } = useAuth()
   const [lobby, setLobby] = useState<Lobby>(initialLobby)
@@ -122,6 +125,31 @@ export function LobbyScreen({
   async function handleLeave() {
     if (userId) await leaveLobby(userId, lobby)
     onLeave()
+  }
+
+  async function handleStart() {
+    if (!userId || !profile || !onStart) return
+
+    const supabase = getSupabaseBrowser()
+    if (supabase) {
+      await supabase.from('lobbies').update({ status: 'in_game' }).eq('id', lobby.id)
+      setLobby((prev) => ({ ...prev, status: 'in_game' }))
+    }
+
+    const engine = new GameEngine({
+      mapId: lobby.map,
+      localId: userId,
+      localName: profile.username,
+      localColor: '#8b5cf6',
+      localTeam: 'A',
+      humans: [
+        { id: userId, name: profile.username, color: '#8b5cf6', team: 'A' },
+      ],
+      botsPerTeam: 3,
+      onMatchEnd: () => {},
+    })
+
+    onStart(engine)
   }
 
   function copyCode() {
@@ -245,6 +273,7 @@ export function LobbyScreen({
 
           {isHost && (
             <button
+              onClick={handleStart}
               disabled={!canStart}
               className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3.5 font-mono text-sm font-black tracking-widest text-primary-foreground border-glow-purple active:scale-[0.98] disabled:opacity-50"
             >
