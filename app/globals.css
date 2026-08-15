@@ -61,6 +61,14 @@
   --radius: 0.75rem;
 }
 
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
 @layer base {
   * {
     @apply border-border;

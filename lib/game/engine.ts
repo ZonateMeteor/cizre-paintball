@@ -33,6 +33,7 @@ export type Combatant = {
   money: number
   kills: number
   deaths: number
+  xp: number
   reloadUntil: number
   lastShotAt: number
   hitFlash: number
@@ -54,6 +55,16 @@ export type Grenade = {
   fuse: number
   ownerId: string
   team: Team
+}
+
+export type Bomb = {
+  carrierIds: string[] // Team A players who can carry the bomb
+  pos: THREE.Vector3 // Current position (on ground or on carrier)
+  plantedAt: THREE.Vector3 | null // Position where bomb is planted
+  plantingPlayerId: string | null // Who is planting
+  plantingProgress: number // 0 to 1
+  state: 'ground' | 'carried' | 'planted' | 'exploded' // bomb state
+  explosionTime: number // Time until explosion after planting
 }
 
 type Aabb = { min: THREE.Vector3; max: THREE.Vector3 }
@@ -122,6 +133,7 @@ export class GameEngine {
   sparks: Spark[] = []
   explosions: Explosion[] = []
   grenades: Grenade[] = []
+  bomb: Bomb | null = null
   shake = 0
   phase: Phase = 'buy'
   phaseTimer = ROUND.buyTime
@@ -174,7 +186,7 @@ export class GameEngine {
       health: PLAYER.maxHealth, shield: 0, alive: true,
       weapon: 'pistol', ammo: WEAPONS.pistol.magazine, reserve: WEAPONS.pistol.reserve,
       grenades: 0, money: ECONOMY.startMoney,
-      kills: 0, deaths: 0,
+      kills: 0, deaths: 0, xp: 0,
       reloadUntil: 0, lastShotAt: 0, hitFlash: 0,
       targetId: null, wander: new THREE.Vector3(), nextThink: 0,
       aimError: new THREE.Vector3(),
@@ -237,15 +249,18 @@ export class GameEngine {
 
   private equipBot(c: Combatant) {
     const r = this.roundNum
+    const weapons: WeaponId[] = ['pistol', 'smg', 'uzi', 'rifle', 'ak47', 'shotgun', 'pump', 'sniper', 'laser', 'deagle']
     let w: WeaponId = 'pistol'
-    if (r >= 2) w = 'smg'
-    if (r >= 4) w = Math.random() < 0.5 ? 'rifle' : 'shotgun'
-    if (r >= 6 && Math.random() < 0.3) w = 'sniper'
+    if (r >= 2) w = Math.random() < 0.6 ? 'smg' : 'uzi'
+    if (r >= 4) w = Math.random() < 0.7 ? (Math.random() < 0.5 ? 'rifle' : 'ak47') : (Math.random() < 0.5 ? 'shotgun' : 'pump')
+    if (r >= 6 && Math.random() < 0.4) w = 'sniper'
+    if (r >= 8 && Math.random() < 0.3) w = Math.random() < 0.5 ? 'laser' : 'sniper'
+    if (r >= 10 && Math.random() < 0.2) w = 'deagle'
     c.weapon = w
     c.ammo = WEAPONS[w].magazine
     c.reserve = WEAPONS[w].reserve
-    c.shield = r >= 3 ? 50 : 0
-    c.grenades = Math.random() < 0.4 ? 1 : 0
+    c.shield = r >= 3 ? (r >= 7 ? 100 : 50) : 0
+    c.grenades = Math.random() < (r / 13) * 0.7 ? Math.min(3, Math.floor(r / 5) + 1) : 0
   }
 
   private aliveCounts() {
@@ -343,12 +358,19 @@ export class GameEngine {
         hitC = c
       }
     }
-    const end = origin.clone().add(dir.clone().multiplyScalar(Math.min(hitC ? hitDist : Math.min(wallDist, w.range), w.range)))
-    this.tracers.push({ from: origin.clone(), to: end, color: w.color, t: 0, life: 0.06 })
+    
+    // Only show tracers for ranged weapons (not knives)
+    if (w.id !== 'knife') {
+      const end = origin.clone().add(dir.clone().multiplyScalar(Math.min(hitC ? hitDist : Math.min(wallDist, w.range), w.range)))
+      this.tracers.push({ from: origin.clone(), to: end, color: w.color, t: 0, life: 0.06 })
+    }
+    
     if (hitC) {
       const dmg = damageFalloff(w.damage, hitDist, w.range)
       this.applyDamage(hitC, dmg, shooter)
-      this.sparks.push({ pos: end.clone(), t: 0, life: 0.2 })
+      if (w.id !== 'knife') {
+        this.sparks.push({ pos: origin.clone().add(dir.clone().multiplyScalar(hitDist)), t: 0, life: 0.2 })
+      }
       if (shooter.isLocal) {
         SFX.playHit()
         setHud({ hitMarker: performance.now() })
@@ -383,7 +405,12 @@ export class GameEngine {
     victim.health = 0
     victim.deaths++
     attacker.kills++
+    
+    // Award money and XP
+    const killXp = 50 + (this.roundNum * 5)
+    attacker.xp += killXp
     attacker.money = Math.min(ECONOMY.maxMoney, attacker.money + ECONOMY.killReward)
+    
     pushKillFeed({
       attacker: attacker.username,
       victim: victim.username,
@@ -446,10 +473,13 @@ export class GameEngine {
     this.phaseTimer = ROUND.respawnDelay + 1
     if (winner === 'A') this.scoreA++
     else this.scoreB++
-    // ekonomi
+    // ekonomi ve XP
     for (const c of this.combatants.values()) {
       const won = c.team === winner
       c.money = Math.min(ECONOMY.maxMoney, c.money + (won ? ECONOMY.winReward : ECONOMY.lossReward))
+      // Round win XP
+      const roundXp = won ? 100 + (this.roundNum * 10) : 30 + (this.roundNum * 5)
+      c.xp += roundXp
     }
     const localTeam = this.local?.team
     if (localTeam) {

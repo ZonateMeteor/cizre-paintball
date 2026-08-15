@@ -47,29 +47,45 @@ export function playShot(weapon: string) {
   if (!c || !master || !enabled) return
   const t = c.currentTime
 
+  // Weapon-specific base frequency
+  const weaponParams: Record<string, { freq: number; duration: number; noise: number }> = {
+    pistol: { freq: 160, duration: 0.14, noise: 0.5 },
+    deagle: { freq: 140, duration: 0.20, noise: 0.7 },
+    smg: { freq: 140, duration: 0.10, noise: 0.4 },
+    uzi: { freq: 150, duration: 0.09, noise: 0.4 },
+    rifle: { freq: 130, duration: 0.16, noise: 0.55 },
+    ak47: { freq: 125, duration: 0.18, noise: 0.60 },
+    shotgun: { freq: 60, duration: 0.25, noise: 0.8 },
+    pump: { freq: 65, duration: 0.28, noise: 0.85 },
+    sniper: { freq: 90, duration: 0.35, noise: 0.7 },
+    laser: { freq: 200, duration: 0.12, noise: 0.3 },
+    knife: { freq: 800, duration: 0.08, noise: 0.2 },
+  }
+
+  const params = weaponParams[weapon] || { freq: 130, duration: 0.14, noise: 0.5 }
+
   // düşük gövde (patlama)
   const osc = c.createOscillator()
   const og = c.createGain()
   osc.type = 'square'
-  const baseFreq = weapon === 'sniper' ? 90 : weapon === 'shotgun' ? 70 : weapon === 'pistol' ? 160 : 130
-  osc.frequency.setValueAtTime(baseFreq, t)
-  osc.frequency.exponentialRampToValueAtTime(baseFreq * 0.4, t + 0.12)
-  env(c, og, 0.6, 0.001, weapon === 'sniper' ? 0.35 : 0.14)
+  osc.frequency.setValueAtTime(params.freq, t)
+  osc.frequency.exponentialRampToValueAtTime(params.freq * 0.4, t + params.duration)
+  env(c, og, 0.6, 0.001, params.duration)
   osc.connect(og).connect(master)
   osc.start(t)
-  osc.stop(t + 0.5)
+  osc.stop(t + params.duration + 0.1)
 
   // kırbaç (yüksek frekans gürültü)
   const src = c.createBufferSource()
-  src.buffer = noiseBuffer(c, 0.2)
+  src.buffer = noiseBuffer(c, params.duration * 0.8)
   const ng = c.createGain()
   const hp = c.createBiquadFilter()
   hp.type = 'highpass'
-  hp.frequency.value = weapon === 'smg' ? 1800 : 1200
-  env(c, ng, 0.5, 0.001, weapon === 'sniper' ? 0.25 : 0.09)
+  hp.frequency.value = weapon === 'smg' || weapon === 'uzi' ? 1800 : weapon === 'laser' ? 2400 : 1200
+  env(c, ng, params.noise, 0.001, params.duration * 0.6)
   src.connect(hp).connect(ng).connect(master)
   src.start(t)
-  src.stop(t + 0.3)
+  src.stop(t + params.duration)
 }
 
 export function playReload() {

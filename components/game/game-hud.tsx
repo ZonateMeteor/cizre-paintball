@@ -2,7 +2,8 @@
 
 import { useEffect, useRef } from "react"
 import { controls, useHud } from "@/lib/game/store"
-import { WEAPONS } from "@/lib/game/config"
+import { WEAPONS, GEAR } from "@/lib/game/config"
+import { useEngine } from "./game-context"
 
 // --- Joystick (sol alt) ---
 function Joystick() {
@@ -141,6 +142,61 @@ function ActionButton({
   )
 }
 
+// --- Buy Menu for Buy Phase ---
+function BuyMenu() {
+  const engine = useEngine()
+  const hud = useHud()
+
+  if (hud.phase !== 'buy') return null
+
+  const canAfford = (price: number) => hud.money >= price
+
+  return (
+    <div className="pointer-events-auto absolute bottom-20 left-1/2 max-h-72 w-96 -translate-x-1/2 overflow-y-auto rounded-lg border border-secondary/60 bg-background/90 p-3 backdrop-blur-md">
+      <div className="mb-3 text-center font-mono text-sm font-bold text-secondary">SILAH MARKET</div>
+      <div className="space-y-2">
+        {(Object.values(WEAPONS) as typeof WEAPONS.pistol[]).map((w) => (
+          <button
+            key={w.id}
+            onClick={() => engine?.buyWeapon(w.id as any)}
+            disabled={!canAfford(w.price)}
+            className={`w-full rounded border px-2 py-1 text-left font-mono text-xs transition-all ${
+              canAfford(w.price)
+                ? 'border-secondary/40 bg-secondary/10 text-secondary active:scale-95 hover:bg-secondary/20'
+                : 'border-border/40 bg-border/10 text-muted-foreground'
+            }`}
+          >
+            <div className="flex justify-between">
+              <span>{w.name}</span>
+              <span className={canAfford(w.price) ? 'text-accent' : 'text-muted-foreground'}>${w.price}</span>
+            </div>
+          </button>
+        ))}
+      </div>
+      <div className="mb-3 mt-4 text-center font-mono text-sm font-bold text-primary">EKIPMAN</div>
+      <div className="space-y-2">
+        {(Object.values(GEAR) as typeof GEAR.shield_light[]).map((g) => (
+          <button
+            key={g.id}
+            onClick={() => engine?.buyGear(g.id as any)}
+            disabled={!canAfford(g.price)}
+            className={`w-full rounded border px-2 py-1 text-left font-mono text-xs transition-all ${
+              canAfford(g.price)
+                ? 'border-primary/40 bg-primary/10 text-primary active:scale-95 hover:bg-primary/20'
+                : 'border-border/40 bg-border/10 text-muted-foreground'
+            }`}
+          >
+            <div className="flex justify-between">
+              <span>{g.name}</span>
+              <span className={canAfford(g.price) ? 'text-accent' : 'text-muted-foreground'}>${g.price}</span>
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 const TEAM_A_CLASS = "text-secondary drop-shadow-[0_0_6px_hsl(var(--secondary)/0.8)]"
 const TEAM_B_CLASS = "text-primary drop-shadow-[0_0_6px_hsl(var(--primary)/0.8)]"
 
@@ -158,8 +214,12 @@ export function GameHud() {
     <div className="pointer-events-none absolute inset-0 z-20 overflow-hidden font-sans text-foreground">
       <LookArea />
 
-      {/* Hasar flaşı */}
-      {showDamage && <div className="absolute inset-0 bg-primary/25" />}
+      {/* Hasar flaşı - daha belirgin */}
+      {showDamage && (
+        <div className="absolute inset-0 animate-pulse bg-red-600/20" style={{
+          animation: 'pulse 0.2s ease-out'
+        }} />
+      )}
 
       {/* Üst skor barı */}
       <div className="absolute left-1/2 top-3 flex -translate-x-1/2 items-center gap-3 rounded-lg border border-border bg-background/70 px-4 py-1.5 backdrop-blur-sm">
@@ -210,14 +270,22 @@ export function GameHud() {
       {hud.alive && hud.phase !== "roundend" && (
         <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
           <div className="relative h-6 w-6">
+            {/* Crosshair */}
             <span className="absolute left-1/2 top-0 h-2 w-0.5 -translate-x-1/2 bg-secondary/90" />
             <span className="absolute bottom-0 left-1/2 h-2 w-0.5 -translate-x-1/2 bg-secondary/90" />
             <span className="absolute left-0 top-1/2 h-0.5 w-2 -translate-y-1/2 bg-secondary/90" />
             <span className="absolute right-0 top-1/2 h-0.5 w-2 -translate-y-1/2 bg-secondary/90" />
+            
+            {/* Hit marker animation */}
             {showHit && (
               <>
-                <span className="absolute left-1/2 top-1/2 h-3 w-0.5 -translate-x-1/2 -translate-y-1/2 rotate-45 bg-primary" />
-                <span className="absolute left-1/2 top-1/2 h-3 w-0.5 -translate-x-1/2 -translate-y-1/2 -rotate-45 bg-primary" />
+                <span className="absolute left-1/2 top-1/2 h-3 w-0.5 -translate-x-1/2 -translate-y-1/2 rotate-45 animate-pulse bg-primary" />
+                <span className="absolute left-1/2 top-1/2 h-3 w-0.5 -translate-x-1/2 -translate-y-1/2 -rotate-45 animate-pulse bg-primary" />
+                {/* Hit marker corners */}
+                <span className="absolute -left-2 -top-2 h-2 w-2 border-l-2 border-t-2 border-accent animate-pulse" />
+                <span className="absolute -right-2 -top-2 h-2 w-2 border-r-2 border-t-2 border-accent animate-pulse" />
+                <span className="absolute -left-2 -bottom-2 h-2 w-2 border-l-2 border-b-2 border-accent animate-pulse" />
+                <span className="absolute -right-2 -bottom-2 h-2 w-2 border-r-2 border-b-2 border-accent animate-pulse" />
               </>
             )}
           </div>
@@ -290,6 +358,9 @@ export function GameHud() {
           </div>
         </div>
       )}
+
+      {/* Buy Menu */}
+      <BuyMenu />
     </div>
   )
 }

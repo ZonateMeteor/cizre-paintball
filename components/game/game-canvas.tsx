@@ -21,13 +21,21 @@ function EngineDriver({ engine }: { engine: GameEngine }) {
 export function GameCanvas({ engine }: { engine: GameEngine }) {
   return (
     <Canvas
-      dpr={[1, 1.6]}
-      gl={{ antialias: false, powerPreference: 'high-performance' }}
+      dpr={[1, 1.5]}
+      gl={{ 
+        antialias: false, 
+        powerPreference: 'high-performance',
+        precision: 'lowp',
+        stencil: false,
+        depth: true,
+        alpha: false,
+      }}
       camera={{ fov: 75, near: 0.1, far: 200, position: [0, 1.6, 0] }}
       onCreated={({ scene }) => {
         scene.background = new THREE.Color(engine.map.sky)
         scene.fog = new THREE.Fog(engine.map.fog, engine.map.fogNear, engine.map.fogFar)
       }}
+      style={{ touchAction: 'none' }}
     >
       <GameContext.Provider value={engine}>
         <EngineDriver engine={engine} />

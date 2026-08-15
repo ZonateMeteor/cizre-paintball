@@ -1,9 +1,15 @@
 export type WeaponId =
   | 'pistol'
+  | 'deagle'
   | 'smg'
+  | 'uzi'
   | 'rifle'
+  | 'ak47'
   | 'shotgun'
+  | 'pump'
   | 'sniper'
+  | 'laser'
+  | 'knife'
 
 export type WeaponKind = 'primary' | 'secondary'
 
@@ -48,6 +54,23 @@ export const WEAPONS: Record<WeaponId, Weapon> = {
     auto: false,
     color: '#a855f7',
   },
+  deagle: {
+    id: 'deagle',
+    name: 'Deagle .50',
+    kind: 'secondary',
+    price: 800,
+    damage: 63,
+    range: 60,
+    fireRate: 3,
+    magazine: 7,
+    reserve: 35,
+    spread: 0.008,
+    pellets: 1,
+    reloadTime: 1.8,
+    recoil: 1.6,
+    auto: false,
+    color: '#fbbf24',
+  },
   smg: {
     id: 'smg',
     name: 'Vektor SMG',
@@ -64,6 +87,23 @@ export const WEAPONS: Record<WeaponId, Weapon> = {
     recoil: 0.5,
     auto: true,
     color: '#22d3ee',
+  },
+  uzi: {
+    id: 'uzi',
+    name: 'Neon Uzi',
+    kind: 'primary',
+    price: 1500,
+    damage: 17,
+    range: 40,
+    fireRate: 16,
+    magazine: 25,
+    reserve: 100,
+    spread: 0.045,
+    pellets: 1,
+    reloadTime: 1.8,
+    recoil: 0.4,
+    auto: true,
+    color: '#ec4899',
   },
   rifle: {
     id: 'rifle',
@@ -82,22 +122,56 @@ export const WEAPONS: Record<WeaponId, Weapon> = {
     auto: true,
     color: '#a855f7',
   },
+  ak47: {
+    id: 'ak47',
+    name: 'AK Pulse',
+    kind: 'primary',
+    price: 2500,
+    damage: 39,
+    range: 85,
+    fireRate: 8,
+    magazine: 30,
+    reserve: 90,
+    spread: 0.024,
+    pellets: 1,
+    reloadTime: 2.8,
+    recoil: 1.1,
+    auto: true,
+    color: '#ef4444',
+  },
   shotgun: {
     id: 'shotgun',
-    name: 'Breacher',
+    name: 'Sawed Breacher',
     kind: 'primary',
-    price: 2000,
-    damage: 14,
-    range: 22,
-    fireRate: 1.4,
-    magazine: 7,
-    reserve: 28,
-    spread: 0.09,
-    pellets: 9,
-    reloadTime: 3,
-    recoil: 2.2,
+    price: 1800,
+    damage: 12,
+    range: 18,
+    fireRate: 1.8,
+    magazine: 8,
+    reserve: 32,
+    spread: 0.12,
+    pellets: 8,
+    reloadTime: 2.5,
+    recoil: 2,
     auto: false,
     color: '#f97316',
+  },
+  pump: {
+    id: 'pump',
+    name: 'Pump Breacher',
+    kind: 'primary',
+    price: 2000,
+    damage: 16,
+    range: 22,
+    fireRate: 1.2,
+    magazine: 6,
+    reserve: 24,
+    spread: 0.09,
+    pellets: 9,
+    reloadTime: 3.2,
+    recoil: 2.3,
+    auto: false,
+    color: '#fbbf24',
   },
   sniper: {
     id: 'sniper',
@@ -116,9 +190,43 @@ export const WEAPONS: Record<WeaponId, Weapon> = {
     auto: false,
     color: '#22d3ee',
   },
+  laser: {
+    id: 'laser',
+    name: 'Laser Rifle',
+    kind: 'primary',
+    price: 3200,
+    damage: 45,
+    range: 120,
+    fireRate: 6,
+    magazine: 40,
+    reserve: 80,
+    spread: 0.008,
+    pellets: 1,
+    reloadTime: 2.2,
+    recoil: 0.3,
+    auto: true,
+    color: '#22c55e',
+  },
+  knife: {
+    id: 'knife',
+    name: 'Neon Blade',
+    kind: 'secondary',
+    price: 500,
+    damage: 75,
+    range: 2,
+    fireRate: 2,
+    magazine: 999,
+    reserve: 999,
+    spread: 0,
+    pellets: 1,
+    reloadTime: 0,
+    recoil: 0,
+    auto: false,
+    color: '#06b6d4',
+  },
 }
 
-export type GearId = 'shield_light' | 'shield_heavy' | 'grenade' | 'ammo'
+export type GearId = 'shield_light' | 'shield_heavy' | 'grenade' | 'ammo' | 'bomb'
 
 export type Gear = {
   id: GearId
@@ -132,6 +240,7 @@ export const GEAR: Record<GearId, Gear> = {
   shield_heavy: { id: 'shield_heavy', name: 'Ağır Kalkan', price: 1000, description: '+100 kalkan' },
   grenade: { id: 'grenade', name: 'Patlayıcı', price: 300, description: 'Alan hasarı, +1 adet' },
   ammo: { id: 'ammo', name: 'Cephane Paketi', price: 200, description: 'Yedek mermileri doldur' },
+  bomb: { id: 'bomb', name: 'Hedef Pili', price: 0, description: 'Hedefteki hedefi aktifleştir' },
 }
 
 // Ekonomi
@@ -141,6 +250,9 @@ export const ECONOMY = {
   winReward: 3000,
   lossReward: 1900,
   killReward: 300,
+  bombPlantReward: 300,
+  bombDefuseReward: 600,
+  bombExplodeReward: 500,
   maxGrenades: 3,
 }
 
@@ -152,6 +264,9 @@ export const ROUND = {
   buyTime: 15, // saniye - base'den çıkamama + market
   roundTime: 100, // saniye
   respawnDelay: 3,
+  bombPlantTime: 3, // saniye
+  bombDefuseTime: 5, // saniye
+  bombExplosionTime: 40, // saniye
 }
 
 export const PLAYER = {
