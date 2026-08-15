@@ -79,36 +79,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async (username: string, password: string) => {
       if (!supabase) return { error: 'Supabase yapılandırılmamış.' }
       const clean = username.trim()
-      if (clean.length < 3) return { error: 'Kullanıcı adı en az 3 karakter olmalı.' }
-      if (password.length < 6) return { error: 'Şifre en az 6 karakter olmalı.' }
 
-      // Kullanıcı adı benzersiz mi?
-      const { data: existing } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('username', clean)
-        .maybeSingle()
-      if (existing) return { error: 'Bu kullanıcı adı zaten alınmış.' }
+      // Kaydı sunucu tarafında oluştur (e-posta onayı gerekmeden).
+      const res = await fetch('/api/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: clean, password }),
+      })
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) return { error: json.error ?? 'Kayıt oluşturulamadı.' }
 
-      const { data, error } = await supabase.auth.signUp({
+      // Otomatik giriş yap.
+      const { error } = await supabase.auth.signInWithPassword({
         email: usernameToEmail(clean),
         password,
       })
       if (error) return { error: error.message }
-      const newId = data.user?.id
-      if (!newId) return { error: 'Kayıt oluşturulamadı.' }
-
-      const { error: pErr } = await supabase.from('profiles').insert({
-        id: newId,
-        username: clean,
-        money: 800,
-      })
-      if (pErr) return { error: pErr.message }
-
-      await loadProfile(newId)
       return {}
     },
-    [supabase, loadProfile],
+    [supabase],
   )
 
   const signIn = useCallback(
