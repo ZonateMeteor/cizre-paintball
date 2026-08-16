@@ -32,7 +32,7 @@ export function PlayerController({ onWeaponEvent }: { onWeaponEvent: (e: 'shoot'
 
     // --- hareket (buy fazında base'de kilitli) ---
     if (l.alive && engine.phase === 'live') {
-      forward.current.set(Math.sin(l.yaw), 0, Math.cos(l.yaw))
+      forward.current.set(-Math.sin(l.yaw), 0, -Math.cos(l.yaw))
       right.current.set(Math.cos(l.yaw), 0, -Math.sin(l.yaw))
       const move = new THREE.Vector3()
       move.addScaledVector(forward.current, -controls.moveY)

@@ -9,6 +9,7 @@ import { MainMenu } from '@/components/main-menu'
 import { LobbyScreen } from '@/components/lobby-screen'
 import { GameCanvas } from '@/components/game/game-canvas'
 import { GameHud } from '@/components/game/game-hud'
+import { GameContext } from '@/components/game/game-context'
 import { GameEngine } from '@/lib/game/engine'
 import type { Lobby } from '@/lib/types'
 import { Loader2 } from 'lucide-react'
@@ -17,7 +18,9 @@ function MatchScreen({ engine, onClose }: { engine: GameEngine; onClose: () => v
   return (
     <div className="relative h-dvh w-full overflow-hidden bg-black">
       <GameCanvas engine={engine} />
-      <GameHud />
+      <GameContext.Provider value={engine}>
+        <GameHud />
+      </GameContext.Provider>
       <button
         onClick={onClose}
         className="absolute left-4 top-4 z-30 rounded-xl border border-border bg-background/70 px-3 py-2 font-mono text-xs font-bold uppercase tracking-wider text-foreground"
